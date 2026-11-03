@@ -15,9 +15,16 @@ build
 coverage
 
 # Environment variables
+# Every VITE_* value is inlined into the public JS bundle at build time, so
+# these files hold build configuration, not secrets. They are tracked on
+# purpose: ignoring them meant a server build found no env file and silently
+# fell back to the default in src/lib/constants.ts, so a wrong API base URL
+# could not be told apart from a missing one.
 .env
 .env.*
 !.env.example
+!.env.development
+!.env.production
 *.local
 
 # Analysis and Cache
