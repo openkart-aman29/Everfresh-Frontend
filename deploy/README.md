@@ -131,35 +131,44 @@ cp /etc/nginx/sites-available/admin.everfresh.ae.bak-* \
 nginx -t && systemctl reload nginx
 ```
 
-### What the new vhost keeps, and what it drops
+### What changes in the vhost, and what does not
 
-The vhost it replaces was Certbot-generated and proxied **everything** to
-`10.10.0.30:5000`. The API has moved off that box entirely, so the proxying is
-gone — no `upstream`, no `location /api/`, no `proxy_pass`.
+This box is a shared reverse proxy for seventeen other sites, so the vhost is
+edited as little as possible. One block changes:
 
-Kept on purpose:
+```diff
+     location / {
+-        proxy_pass http://10.10.0.30:5000;  # your app CT + port
+-        proxy_set_header Host $host;
+-        proxy_set_header X-Real-IP $remote_addr;
+-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+-        proxy_set_header X-Forwarded-Proto $scheme;
++        add_header Cache-Control "no-store" always;
++        try_files $uri $uri/ /index.html;
+     }
+```
 
-- both server names, `admin.everfresh.ae` and `www.admin.everfresh.ae`
-- the port-80 block, byte-for-byte as Certbot wrote it. Renewal uses the nginx
-  plugin, which edits the running config rather than serving a webroot
-  challenge, so editing that block risks breaking renewal.
-- an exact-match `/health`, but now a `301` to `api.everfresh.ae/health`
-  instead of a proxy. This hostname was the API's only public address for a
-  long time and an uptime monitor may still be pointed at it. Without the
-  block the request would fall through `try_files` and get the SPA shell with a
-  `200`: permanently green, permanently wrong. Delete it once nothing points
-  here.
-
-Added:
-
-- `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy`. helmet
-  set these on API responses, and the API is no longer served from this host,
-  so nothing would set them on the panel's own HTML. `DENY` rather than
-  `SAMEORIGIN` because nothing legitimately frames an admin panel, and framing
-  it is the whole clickjacking attack.
+plus `root`, `index`, `disable_symlinks off` on the server block and a
+`location /assets/` for cache headers. Everything else is byte-for-byte as it
+was: both server blocks, both server names, every Certbot-managed line, and the
+whole port-80 block. Renewal uses the nginx plugin, which edits the running
+config, so leaving that block alone is what keeps renewal working.
 
 The certificate at `/etc/letsencrypt/live/admin.everfresh.ae/` already covers
-this hostname. No new certbot run is needed.
+this hostname and runs to 21 Jan 2027. No new certbot run is needed, and
+`sites-enabled/admin.everfresh.ae` already symlinks to `sites-available`, so
+replacing the file there is the whole swap.
+
+Two things were considered and deliberately left out, to keep the diff small.
+Say the word if either is wanted - each is one block:
+
+- **`location = /health`.** This hostname was the API's only public address for
+  a long time. If an uptime monitor is still pointed at `/health`, it now gets
+  the SPA shell with a `200` - permanently green, permanently wrong. A `301` to
+  `api.everfresh.ae/health` would fix that.
+- **`X-Frame-Options: DENY` and friends.** helmet sets these on API responses,
+  and the API is no longer served from this host, so nothing sets them on the
+  panel's own HTML. Framing an admin panel is the whole clickjacking attack.
 
 ## Routine deploy
 
