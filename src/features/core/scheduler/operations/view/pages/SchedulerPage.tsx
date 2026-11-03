@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { addDays, subDays, addWeeks, subWeeks, startOfWeek, isSameDay, isSameWeek } from 'date-fns'
 import { useReadAllBookingsQuery } from '@/features/api/bookings/apis/BookingsAPI'
 import { SchedulerHeader } from '@/features/core/scheduler/operations/view/components/SchedulerHeader'
+import CreateBookingDialog from '@/features/core/scheduler/operations/create/components/CreateBookingDialog'
+import { Button } from '@/components/ui/button'
+import { CalendarPlus } from 'lucide-react'
 import { TimeGrid } from '@/features/core/scheduler/operations/view/components/TimeGrid'
 import { DayColumn } from '@/features/core/scheduler/operations/view/components/DayColumn'
 import { SidePanel } from '@/components/ui/SidePanel'
@@ -14,6 +17,7 @@ export default function SchedulerPage() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [view, setView] = useState<SchedulerView>('week')
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+    const [createOpen, setCreateOpen] = useState(false)
 
     // Fetch bookings from API
     const { data: bookings = [], isLoading, error, refetch } = useReadAllBookingsQuery()
@@ -67,7 +71,13 @@ export default function SchedulerPage() {
     return (
         <div className="h-[calc(100vh-4rem)] p-4 bg-background">
             <Card className="h-full flex flex-col border-none shadow-sm rounded-xl overflow-hidden">
-                <CardHeader className="p-0 border-b">
+                <CardHeader className="p-0 border-b relative">
+                    <div className="absolute right-4 top-1/2 z-10 -translate-y-1/2">
+                        <Button size="sm" onClick={() => setCreateOpen(true)}>
+                            <CalendarPlus className="mr-2 h-4 w-4" />
+                            New Booking
+                        </Button>
+                    </div>
                     <SchedulerHeader
                         currentDate={currentDate}
                         view={view}
@@ -103,6 +113,12 @@ export default function SchedulerPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <CreateBookingDialog
+                open={createOpen}
+                onOpenChange={setCreateOpen}
+                defaultDate={currentDate}
+            />
 
             <SidePanel
                 isOpen={!!selectedBooking}

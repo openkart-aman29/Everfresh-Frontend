@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useResetPasswordMutation } from '@/features/auth/staff/apis/StaffAuthAPI'
 import { resetPasswordSchema, type ResetPasswordSchema } from '@/features/auth/staff/operations/reset_password/zod_schemas/ResetPasswordSchema'
 import { ROUTES } from '@/lib/constants'
+import { PasswordInput } from '@/components/ui/password-input'
 
 interface ResetPasswordFormProps {
     token: string
@@ -48,11 +49,9 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
                 <label htmlFor="newPassword" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                     New Password
                 </label>
-                <input
+                <PasswordInput
                     id="newPassword"
-                    type="password"
                     disabled={isLoading}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     {...form.register('newPassword')}
                 />
                 {form.formState.errors.newPassword && (
@@ -63,11 +62,9 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
                 <label htmlFor="confirmPassword" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                     Confirm Password
                 </label>
-                <input
+                <PasswordInput
                     id="confirmPassword"
-                    type="password"
                     disabled={isLoading}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     {...form.register('confirmPassword')}
                 />
                 {form.formState.errors.confirmPassword && (

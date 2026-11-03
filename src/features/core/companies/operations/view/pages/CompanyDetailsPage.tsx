@@ -1,3 +1,24 @@
+function MetricCard({ label, value, change, icon: Icon, className }: { label: string, value: string | number, change?: number, icon: any, className?: string }) {
+    return (
+        <Card className={`border-none shadow-sm ${className || 'bg-white/50 backdrop-blur-sm'}`}>
+            <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                    <p className="text-xs font-medium text-muted-foreground leading-tight">{label}</p>
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </div>
+                <div className="mt-2 text-xl font-bold truncate" title={String(value)}>{value}</div>
+                {change !== undefined && (
+                    <p className={`text-[11px] ${change >= 0 ? 'text-emerald-500' : 'text-red-500'} truncate`}>
+                        {change > 0 ? '+' : ''}{change}%
+                        <span className="text-muted-foreground ml-1">vs last month</span>
+                    </p>
+                )}
+            </CardContent>
+        </Card>
+    )
+}
+
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -16,15 +37,26 @@ import {
     Clock,
     Pencil,
     Trash2,
-    Shield
+    Shield,
+    Inbox,
+    Info
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import { useReadCompanyQuery } from '@/features/api/company/apis/CompanyAPI'
+import CompanyEnquiriesPanel from '@/features/core/companies/operations/view/components/CompanyEnquiriesPanel'
 import { format } from 'date-fns'
 
 export default function CompanyDetailsPage() {
+    const [detailsOpen, setDetailsOpen] = useState(false)
     const { companyId } = useParams<{ companyId: string }>()
     const navigate = useNavigate()
     const { data: company, isLoading, isError } = useReadCompanyQuery(companyId || '', {
@@ -99,6 +131,9 @@ export default function CompanyDetailsPage() {
                     <Button variant="default" size="sm" onClick={() => navigate(`/app/admin?company_id=${companyId}`)}>
                         <Shield className="mr-2 h-4 w-4" /> Admin Management
                     </Button>
+                    <Button variant="outline" size="sm" onClick={() => setDetailsOpen(true)}>
+                        <Info className="mr-2 h-4 w-4" /> Company Details
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => navigate(`/app/companies/${companyId}/edit`)}>
                         <Pencil className="mr-2 h-4 w-4" /> Edit
                     </Button>
@@ -112,121 +147,100 @@ export default function CompanyDetailsPage() {
                 </div>
             </motion.div>
 
-            <div className="grid gap-6 md:grid-cols-3">
-                {/* Main Info Card */}
-                <motion.div variants={itemVariants} className="md:col-span-2 space-y-6">
-                    <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-medium">Company Overview</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-4 sm:grid-cols-2">
-                            <InfoItem icon={Mail} label="Email" value={company.email} />
-                            <InfoItem icon={Phone} label="Phone" value={company.phone} />
-                            <InfoItem icon={MapPin} label="Address" value={company.address} />
-                            <InfoItem icon={Globe} label="Timezone" value={company.timezone} />
-                            <InfoItem icon={CreditCard} label="Currency" value={company.currency} />
-                            <InfoItem
-                                icon={Calendar}
-                                label="Joined"
-                                value={company.created_at ? format(new Date(company.created_at), "PPP") : 'N/A'}
-                            />
-                        </CardContent>
-                    </Card>
+            {/* Metrics strip - full width so six compact tiles fit on one row and
+                the near-empty sidebar that used to hold two of them is gone. */}
+            <motion.div
+                variants={itemVariants}
+                className="grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-6"
+            >
+                <MetricCard
+                    label="Total Bookings"
+                    value={company.dashboard_metrics.total_bookings}
+                    change={company.dashboard_metrics.total_bookings_change_percent}
+                    icon={ListTodo}
+                />
+                <MetricCard
+                    label="Revenue"
+                    value={`${company.currency} ${company.dashboard_metrics.revenue}`}
+                    change={company.dashboard_metrics.revenue_change_percent}
+                    icon={TrendingUp}
+                />
+                <MetricCard
+                    label="Pending"
+                    value={company.dashboard_metrics.pending_bookings}
+                    icon={Clock}
+                    className="bg-amber-50/50 border-amber-100"
+                />
+                <MetricCard
+                    label="Completed"
+                    value={company.dashboard_metrics.completed_bookings}
+                    icon={CheckCircle2}
+                    className="bg-emerald-50/50 border-emerald-100"
+                />
+                <MetricCard
+                    label="Active Agents"
+                    value={company.dashboard_metrics.active_agents}
+                    icon={Shield}
+                />
+                <MetricCard
+                    label="Waitlist"
+                    value={company.dashboard_metrics.wait_list}
+                    icon={Inbox}
+                />
+            </motion.div>
 
-                    {/* Metrics Grid */}
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <MetricCard
-                            label="Total Bookings"
-                            value={company.dashboard_metrics.total_bookings}
-                            change={company.dashboard_metrics.total_bookings_change_percent}
-                            icon={ListTodo}
+            {/* Company details on demand, so the page itself stays compact */}
+            <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+                <DialogContent className="max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4" />
+                            {company.company_name}
+                        </DialogTitle>
+                        <DialogDescription>Company profile and platform settings.</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-1 sm:grid-cols-2">
+                        <InfoItem icon={Mail} label="Email" value={company.email} />
+                        <InfoItem icon={Phone} label="Phone" value={company.phone} />
+                        <InfoItem icon={MapPin} label="Address" value={company.address} />
+                        <InfoItem icon={Globe} label="Timezone" value={company.timezone} />
+                        <InfoItem icon={CreditCard} label="Currency" value={company.currency} />
+                        <InfoItem icon={Shield} label="Slug" value={company.slug} />
+                        <InfoItem
+                            icon={CreditCard}
+                            label="Subscription"
+                            value={`${company.subscription_tier} tier`}
                         />
-                        <MetricCard
-                            label="Revenue"
-                            value={`${company.currency} ${company.dashboard_metrics.revenue}`}
-                            change={company.dashboard_metrics.revenue_change_percent}
-                            icon={TrendingUp}
-                        />
-                        <MetricCard
-                            label="Pending Bookings"
-                            value={company.dashboard_metrics.pending_bookings}
-                            icon={Clock}
-                            className="bg-amber-50/50 border-amber-100"
-                        />
-                        <MetricCard
-                            label="Completed Bookings"
-                            value={company.dashboard_metrics.completed_bookings}
-                            icon={CheckCircle2}
-                            className="bg-emerald-50/50 border-emerald-100"
+                        <InfoItem
+                            icon={Calendar}
+                            label="Joined"
+                            value={company.created_at ? format(new Date(company.created_at), "PPP") : 'N/A'}
                         />
                     </div>
-                </motion.div>
+                </DialogContent>
+            </Dialog>
 
-                {/* Sidebar Info/Settings Placeholder */}
-                <motion.div variants={itemVariants} className="space-y-6">
-                    <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm h-full">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-medium">Platform Usage</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Active Agents</span>
-                                    <span className="font-medium">{company.dashboard_metrics.active_agents}</span>
-                                </div>
-                                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                    <div className="h-full bg-primary w-full opacity-20" /> {/* Placeholder width */}
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Waitlist</span>
-                                    <span className="font-medium">{company.dashboard_metrics.wait_list}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </motion.div>
-            </div>
+            {/* Service requests raised from the public website */}
+            <motion.div variants={itemVariants}>
+                <CompanyEnquiriesPanel companyId={company.company_id} />
+            </motion.div>
         </motion.div>
     )
 }
 
 function InfoItem({ icon: Icon, label, value }: { icon: any, label: string, value: string | null }) {
     return (
-        <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-            <div className="p-2 rounded-md bg-primary/10 text-primary mt-0.5">
+        <div className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-muted/50">
+            <div className="shrink-0 rounded-md bg-primary/10 p-2 text-primary">
                 <Icon className="h-4 w-4" />
             </div>
-            <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
-                <p className="text-sm font-medium mt-0.5 truncate max-w-[200px]" title={value || ''}>
+            <div className="min-w-0">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                <p className="truncate text-sm font-medium" title={value || ''}>
                     {value || 'N/A'}
                 </p>
             </div>
         </div>
-    )
-}
-
-function MetricCard({ label, value, change, icon: Icon, className }: { label: string, value: string | number, change?: number, icon: any, className?: string }) {
-    return (
-        <Card className={`border-none shadow-sm ${className || 'bg-white/50 backdrop-blur-sm'}`}>
-            <CardContent className="p-6">
-                <div className="flex items-center justify-between space-y-0 pb-2">
-                    <p className="text-sm font-medium text-muted-foreground">{label}</p>
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex flex-col gap-1">
-                    <div className="text-2xl font-bold">{value}</div>
-                    {change !== undefined && (
-                        <p className={`text-xs ${change >= 0 ? 'text-emerald-500' : 'text-red-500'} flex items-center`}>
-                            {change > 0 ? '+' : ''}{change}%
-                            <span className="text-muted-foreground ml-1">from last month</span>
-                        </p>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
     )
 }

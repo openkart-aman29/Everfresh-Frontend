@@ -18,6 +18,8 @@ import { bookingsApi } from '@/features/api/bookings/apis/BookingsAPI'
 import { staffManagementApi } from '@/features/api/staff/apis/StaffManagementAPI'
 import { adminApi } from '@/features/core/admin/apis/AdminAPI'
 import { companyApi } from '@/features/api/company/apis/CompanyAPI'
+import { enquiriesApi } from '@/features/api/enquiries/apis/EnquiriesAPI'
+import { resourcesApi } from '@/features/api/resources/apis/ResourcesAPI'
 import globalErrorReducer from '@/store/slices/GlobalErrorSlice'
 import { rtkQueryErrorLogger } from '@/store/middleware/errorMiddleware'
 
@@ -28,6 +30,8 @@ const rootReducer = combineReducers({
     [staffManagementApi.reducerPath]: staffManagementApi.reducer,
     [adminApi.reducerPath]: adminApi.reducer,
     [companyApi.reducerPath]: companyApi.reducer,
+    [enquiriesApi.reducerPath]: enquiriesApi.reducer,
+    [resourcesApi.reducerPath]: resourcesApi.reducer,
     globalError: globalErrorReducer,
 })
 
@@ -53,6 +57,8 @@ export const store = configureStore({
             staffManagementApi.middleware,
             adminApi.middleware,
             companyApi.middleware,
+            enquiriesApi.middleware,
+            resourcesApi.middleware,
             rtkQueryErrorLogger
         ),
 })
