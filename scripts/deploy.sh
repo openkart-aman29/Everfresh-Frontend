@@ -200,10 +200,6 @@ $CORS"
     grep -qix 'access-control-allow-credentials: true' <<<"$CORS" \
         || die "The API allows this origin but not credentials, so the refresh
        cookie will never be sent. Check cors({ credentials: true }) on the API."
-
-    say "Checking the stale /health redirects to the API"
-    curl -fsS -o /dev/null -w '    /health -> %{redirect_url}\n' \
-        --resolve "$VHOST:443:127.0.0.1" "https://$VHOST/health"
 fi
 
 if [[ -n "$PREVIOUS" ]]; then
