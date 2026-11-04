@@ -143,7 +143,10 @@ fi
 say "Build OK (${ASSETS} assets, API base $EXPECTED_API)"
 
 # --- Go live ---------------------------------------------------------------
-PREVIOUS="$(readlink -f "$LIVE_LINK" 2>/dev/null || true)"
+# -L first: readlink -f canonicalises a path that does not exist yet and
+# returns it anyway, so on the very first deploy PREVIOUS came back
+# non-empty and the summary offered a rollback to nothing.
+PREVIOUS="$([[ -L "$LIVE_LINK" ]] && readlink -f "$LIVE_LINK" || true)"
 ln -sfn "$RELEASE" "$LIVE_LINK"
 say "live -> $(basename "$RELEASE")"
 

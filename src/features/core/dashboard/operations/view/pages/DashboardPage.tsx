@@ -2,11 +2,15 @@ import { DashboardStats } from '@/features/core/dashboard/operations/view/compon
 // import { SchedulerPreview } from '@/features/core/dashboard/operations/view/components/SchedulerPreview'
 // import { RecentBookingsTable } from '@/features/core/dashboard/operations/view/components/RecentBookingsTable'
 import { StaffManagementTable } from '@/features/core/staff/operations/view/components/StaffManagementTable'
+import CompanyEnquiriesPanel from '@/features/core/companies/operations/view/components/CompanyEnquiriesPanel'
+import { useAppSelector } from '@/store/useStoreHook'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 
 export default function DashboardPage() {
+    const { user } = useAppSelector(state => state.staffAuth)
+
     return (
         <div className="flex flex-col gap-6">
             {/* Page Header */}
@@ -34,6 +38,17 @@ export default function DashboardPage() {
             >
                 <DashboardStats />
             </motion.div>
+
+            {/* Service requests raised from the public website */}
+            {user?.company_id && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <CompanyEnquiriesPanel companyId={user.company_id} />
+                </motion.div>
+            )}
 
             {/* Main Content Grid */}
             <motion.div
